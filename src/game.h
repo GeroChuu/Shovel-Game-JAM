@@ -4,9 +4,13 @@
 #include <raylib.h>
 #include <stddef.h>
 
-typedef void(Room_Init_Func)(void);
-typedef void(Room_Draw_Func)(void);
-typedef void(Room_Update_Func)(float);
+typedef struct Player Player;
+typedef struct Ball Ball;
+typedef struct Room Room;
+
+typedef void(Room_Init_Func)(Room*);
+typedef void(Room_Draw_Func)(const Room*, const Player*, const Ball*, const Ball*, size_t);
+typedef void(Room_Update_Func)(Room*, float);
 
 typedef struct {
     Rectangle bound;
@@ -31,30 +35,33 @@ typedef enum {
     THREE_ONE  ,
     THREE_TWO  ,
     THREE_THREE,
+
+    ROOM_COUNT,
 } Room_Tag;
 
-typedef struct {
+struct Room {
     Block *items;
     size_t count,capacity;
     Vector2 start, finish;
     
     Room_Init_Func *init;
     Room_Draw_Func *draw;
+
     Room_Update_Func *update;
-} Room;
+};
 
 #define PLAYER_MAX_SPEED   600.0f
 #define PLAYER_JUMP       -420.0f
 #define PLAYER_ACCELERATE 1300.0f
 #define PLAYER_FRICTION   1900.0f
 
-typedef struct {
+struct Player {
     Rectangle bound;
     Vector2 velocity;
 
     Rectangle platform;
     bool grounded,body_hardening;
-} Player;
+};
 
 #define BALL_MAX_SPEED   800.0f
 #define BALL_ACCELERATE 1000.0f
@@ -66,12 +73,12 @@ typedef enum {
     BALL_THROWED,
 } Ball_State;
 
-typedef struct {
+struct Ball {
     Rectangle bound;
     Vector2 velocity;
 
     Ball_State state;
-} Ball;
+};
 
 Room *get_room(Room_Tag tag);
 

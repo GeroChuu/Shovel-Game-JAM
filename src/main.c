@@ -306,9 +306,14 @@ int main() {
     ball.bound.width  = 5;
     ball.bound.height = 5;
 
-    room = malloc(sizeof(Room));
-    memset(room, 0, sizeof(Room));
-    nob_da_append(room, ((Block){(Rectangle){32* 0, 32*10, 32*16, 32*2}}));
+    for (int i=ONE_ONE; i<ROOM_COUNT; ++i) {
+        Room *r = get_room(i);
+        r->init(r);
+    }
+
+    room = get_room(ONE_ONE);
+    player.bound.x = room->start.x;
+    player.bound.y = room->start.y;
 
     camera.target.x = SCREEN_WIDTH/2.0f;
     camera.target.y = SCREEN_HEIGHT/2.0f;
