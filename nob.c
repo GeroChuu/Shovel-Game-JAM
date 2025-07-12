@@ -17,7 +17,7 @@ int main(int argc, char **argv)
             nob_mkdir_if_not_exists("web_build");
 
             nob_cmd_append(&cmd, "emcc", "-o", "web_build/index.html");
-            nob_cmd_append(&cmd, "src/main.c");
+            nob_cmd_append(&cmd, "src/main.c", "./src/rooms.c");
             nob_cmd_append(&cmd, "-Os", "-Wall", "../raylib/src/bin/web/libraylib.a");
             nob_cmd_append(&cmd, "-I./src/", "-L./lib/web/");
             nob_cmd_append(&cmd, "--shell-file", "../raylib/src/minshell.html");
@@ -29,7 +29,7 @@ int main(int argc, char **argv)
         } else if (strcmp(sub_cmd, "win") == 0) {
             nob_mkdir_if_not_exists("win_build");
 
-            nob_cmd_append(&cmd, "i686-w64-mingw32-cc", "./src/main.c");
+            nob_cmd_append(&cmd, "i686-w64-mingw32-cc", "./src/rooms.c", "./src/main.c");
             nob_cmd_append(&cmd, "-o", "win_build/Transporter.exe", "-lraylib", "-lwinmm", "-lgdi32");
 
             nob_cmd_append(&cmd, "-I./src/", "-L./lib/windows/");
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
         nob_cmd_append(&cmd, "cc", "-Wall", "-Wextra", "-o", "Transporter");
         nob_cmd_append(&cmd, "-I./src/", "-L./lib/linux");
 
-        nob_cmd_append(&cmd, "./src/main.c");
+        nob_cmd_append(&cmd, "./src/main.c", "./src/rooms.c");
         nob_cmd_append(&cmd, "-lraylib", "-lm");
 
         if (!nob_cmd_run_sync(cmd)) return 1;

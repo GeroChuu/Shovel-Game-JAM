@@ -2,6 +2,7 @@
 #define GAME_H_
 
 #include <raylib.h>
+#include <stddef.h>
 
 typedef void(Room_Init_Func)(void);
 typedef void(Room_Draw_Func)(void);
@@ -17,6 +18,20 @@ typedef struct {
 
 #define FINISH_RADIUS 20.0f
 #define GRAVITY     2000.0f
+
+typedef enum {
+    ONE_ONE    ,
+    ONE_TWO    ,
+    ONE_THREE  ,
+
+    TWO_ONE    ,
+    TWO_TWO    ,
+    TWO_THREE  ,
+
+    THREE_ONE  ,
+    THREE_TWO  ,
+    THREE_THREE,
+} Room_Tag;
 
 typedef struct {
     Block *items;
@@ -57,5 +72,7 @@ typedef struct {
 
     Ball_State state;
 } Ball;
+
+Room *get_room(Room_Tag tag);
 
 #endif // GAME_H_
