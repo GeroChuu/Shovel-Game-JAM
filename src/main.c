@@ -97,8 +97,6 @@ void player_hit_ceil(const Room *r, Player *p, float dt) {
     }
 }
 
-#define FLOAT2VEC2D(f) (Vector2){(f), (f)}
-
 void player_update(const Room *r, Player *p, float dt) {
     if (!do_simulation) return;
 
@@ -141,13 +139,134 @@ void player_update(const Room *r, Player *p, float dt) {
     p->body_hardening = IsKeyDown(KEY_S);
 }
 
-Player player   =  {0};
-Room *room      = NULL;
+void player_swap(const Room *r, Player *p, Ball *b) {
+    Vector2 ball_pos = (Vector2){b->bound.x, b->bound.y};
+    Vector2 ball_velocity = b->velocity;
+
+    b->velocity = p->velocity;
+    b->bound.x  = p->bound.x;
+    b->bound.y  = p->bound.y + (p->bound.height - b->bound.height);
+
+    p->velocity = ball_velocity;
+    p->bound.x  = ball_pos.x;
+    p->bound.y  = ball_pos.y - (p->bound.height - b->bound.height);
+
+    NOB_UNUSED(r);
+}
+
+void ball_check_collision_and_bounce(const Room *r, Ball *b, float dt) {
+    for (size_t i=0; i<r->count; ++i) {
+        Rectangle it = r->items[i].bound;
+        Rectangle ball_rect = b->bound;
+
+        ball_rect.x += b->velocity.x * dt;
+        ball_rect.y += b->velocity.y * dt;
+
+        if (CheckCollisionRecs(it, ball_rect)) {
+            Vector2 plane = {0};
+            if (b->bound.y < it.y && b->bound.x > it.x){
+                plane.y    = -1.0f;
+                b->bound.y = it.y-b->bound.height;
+                
+            } else if (b->bound.y > it.y+it.height && b->bound.x > it.x) {
+                plane.y    =  1.0f;
+                b->bound.y = it.y+it.height;
+
+            } else if (b->bound.y+b->bound.height >= it.y && b->bound.y <= it.y+it.height) {
+                if (b->bound.x <= it.x) {
+                    plane.x    = -1.0f;
+                    b->bound.x = it.x-b->bound.width;
+
+                } else if (b->bound.x >= it.x+it.width) {
+                    plane.x    =  1.0f;
+                    b->bound.x = it.x+it.width;
+                }
+            }
+            
+            b->velocity = Vector2Reflect(b->velocity, plane);
+            b->velocity = Vector2Scale(b->velocity, 0.7f);
+            break;
+        }
+    }
+}
+
+void ball_simulate(const Room *r, Ball *b, float dt) {
+    b->velocity.y += GRAVITY * dt;
+
+    if      (b->velocity.x > 0) b->velocity.x = fmaxf(0, b->velocity.x - (BALL_FRICTION/8) * dt);
+    else if (b->velocity.x < 0) b->velocity.x = fminf(0, b->velocity.x + (BALL_FRICTION/8) * dt);
+    
+    if      (b->velocity.y > 0) b->velocity.y = fmaxf(0, b->velocity.y - (BALL_FRICTION/8) * dt);
+    else if (b->velocity.y < 0) b->velocity.y = fminf(0, b->velocity.y + (BALL_FRICTION/8) * dt);
+
+    b->velocity = Vector2Clamp(b->velocity, FLOAT2VEC2D(-BALL_MAX_SPEED*2), FLOAT2VEC2D(BALL_MAX_SPEED*2));
+    b->bound.x += b->velocity.x * dt;
+    b->bound.y += b->velocity.y * dt;
+
+    ball_check_collision_and_bounce(r, b, dt);
+}
+
+static Ball throw_path[PATH_CAPACITY];
+void ball_update_throw_path(const Room *r, const Ball *b) {
+    throw_path[0].bound    = b->bound;
+    throw_path[0].velocity = b->velocity;
+
+    for (int i=0; i < PATH_CAPACITY; ++i) {
+        Ball *it = &throw_path[i];
+        float dt = i * 0.0003;
+
+        ball_simulate(r, it, dt);
+
+        if (i<PATH_CAPACITY-1) {
+            Ball *next     = &throw_path[i+1];
+            next->bound    = it->bound;
+            next->velocity = it->velocity;
+        }
+    }
+}
+
 Camera2D camera =  {0};
+void ball_update(const Room *r, const Player *p, Ball *b, float dt) {
+    if (b->state == BALL_HOLDED) {
+        b->bound.x = p->bound.x;
+        b->bound.y = p->bound.y + p->bound.height/2;
+
+        if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+            Vector2 mouse    = GetScreenToWorld2D(GetMousePosition(), camera);
+            Vector2 ball_pos = (Vector2){b->bound.x, b->bound.y};
+            b->velocity      = Vector2Scale(Vector2Subtract(mouse, ball_pos), BALL_SPEED_SCALE);
+            
+            ball_update_throw_path(r, b);
+            do_simulation = false;
+        }
+        
+        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+            b->state = BALL_THROWED;
+            do_simulation = true;
+        }
+
+    } else if (b->state == BALL_THROWED) {
+        if (!do_simulation) return;
+
+        ball_simulate(r, b, dt);
+        if (IsKeyPressed(KEY_SPACE)) {
+            player_swap(r, (Player *)p, b);
+        }
+
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_BACKSPACE)) {
+            b->state = BALL_HOLDED;
+        }
+    }
+}
+
+Ball ball     =  {0};
+Room *room    = NULL;
+Player player =  {0};
 
 void do_one_frame(void) {
     float dt = GetFrameTime();
     player_update(room, &player, dt);
+    ball_update(room, &player, &ball, dt);
 
     BeginDrawing();
     ClearBackground(GetColor(0x181828FF));
@@ -163,6 +282,16 @@ void do_one_frame(void) {
     Color player_col = player.body_hardening ? YELLOW : BLUE;
     DrawRectangleRec(player.bound, player_col);
 
+    DrawRectangleRec(ball.bound, GREEN);
+
+    if (ball.state == BALL_HOLDED && !do_simulation) {
+        Color path_color = GREEN;
+        for (int i=0; i < PATH_CAPACITY; ++i) {
+            path_color.a = fmax(0xFF - i*5, 0);
+            DrawRectangleRec(throw_path[i].bound, path_color);
+        }
+    }
+
     EndMode2D();
 
     DrawFPS(5,5);
@@ -173,6 +302,9 @@ void do_one_frame(void) {
 int main() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Transporter");
     player.bound  = (Rectangle){0, 200, 24, 32};
+
+    ball.bound.width  = 5;
+    ball.bound.height = 5;
 
     room = malloc(sizeof(Room));
     memset(room, 0, sizeof(Room));
