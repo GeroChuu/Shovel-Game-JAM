@@ -12,6 +12,13 @@
 
 bool do_simulation = true;
 
+bool rectangle_eq(Rectangle a, Rectangle b) {
+    if (a.x != b.x || a.y != b.y) return false;
+    if (a.width != b.width || a.height != b.height) return false;
+
+    return true;
+}
+
 bool check_player_touch_ground(const Room *r, Player *p, float dt) {
     for (size_t i = 0; i < r->count; ++i) {
         Rectangle it = r->items[i].bound;
@@ -32,13 +39,6 @@ bool check_player_touch_ground(const Room *r, Player *p, float dt) {
     }
 
     return false;
-}
-
-bool rectangle_eq(Rectangle a, Rectangle b) {
-    if (a.x != b.x || a.y != b.y) return false;
-    if (a.width != b.width || a.height != b.height) return false;
-
-    return true;
 }
 
 bool player_hit_wall(const Room *r, Player *p, float dt) {
@@ -141,43 +141,48 @@ void player_update(const Room *r, Player *p, float dt) {
     p->body_hardening = IsKeyDown(KEY_S);
 }
 
+Player player   =  {0};
+Room *room      = NULL;
+Camera2D camera =  {0};
+
+void do_one_frame(void) {
+    float dt = GetFrameTime();
+    player_update(room, &player, dt);
+
+    BeginDrawing();
+    ClearBackground(GetColor(0x181828FF));
+
+    camera.offset.x = GetRenderWidth()/2;
+    camera.offset.y = GetRenderHeight()/2;
+
+    BeginMode2D(camera);
+    for (size_t i=0; i<room->count; ++i) {
+        DrawRectangleRec(room->items[i].bound, RED);
+    }
+
+    Color player_col = player.body_hardening ? YELLOW : BLUE;
+    DrawRectangleRec(player.bound, player_col);
+
+    EndMode2D();
+
+    DrawFPS(5,5);
+
+    EndDrawing();
+}
+
 int main() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Transporter");
-    Player player = {0};
     player.bound  = (Rectangle){0, 200, 24, 32};
-    
-    Room room = {0};
-    nob_da_append(&room, ((Block){(Rectangle){32* 0, 32*10, 32*16, 32*2}}));
 
-    Camera2D camera = {0};
+    room = malloc(sizeof(Room));
+    memset(room, 0, sizeof(Room));
+    nob_da_append(room, ((Block){(Rectangle){32* 0, 32*10, 32*16, 32*2}}));
+
     camera.target.x = SCREEN_WIDTH/2.0f;
     camera.target.y = SCREEN_HEIGHT/2.0f;
     camera.zoom = 1.0f;
 
-    while (!WindowShouldClose()) {
-        float dt = GetFrameTime();
-        player_update(&room, &player, dt);
-
-        BeginDrawing();
-        ClearBackground(GetColor(0x181828FF));
-
-        camera.offset.x = GetRenderWidth()/2;
-        camera.offset.y = GetRenderHeight()/2;
-
-        BeginMode2D(camera);
-        for (size_t i=0; i<room.count; ++i) {
-            DrawRectangleRec(room.items[i].bound, RED);
-        }
-
-        Color player_col = player.body_hardening ? YELLOW : BLUE;
-        DrawRectangleRec(player.bound, player_col);
-
-        EndMode2D();
-
-        DrawFPS(5,5);
-
-        EndDrawing();
-    }
+    while (!WindowShouldClose()) do_one_frame();
 
     CloseWindow();
     return 0;
