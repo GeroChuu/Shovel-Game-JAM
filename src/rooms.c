@@ -3,13 +3,15 @@
 #include <nob.h>
 
 void init_mission_one_room_one(Room *r)       {
-    nob_da_append(r, ((Block){(Rectangle){32*0, 32*10, 32*16, 32*2}}));
-    nob_da_append(r, ((Block){(Rectangle){32*0, 32*0, 32*1, 32*12}}));
-    nob_da_append(r, ((Block){(Rectangle){32*1.3, 32*4, 32*15, 32*1}}));
-    nob_da_append(r, ((Block){(Rectangle){32*1, 32*1, 32*15, 32*1}}));
+    nob_da_append(r, ((Block){(Rectangle){32*0  , 32*10, 32*16, 32*2}})); // base
+    nob_da_append(r, ((Block){(Rectangle){32*0  , 32*0 , 32*1 , 32*12}}));// left wall
+    nob_da_append(r, ((Block){(Rectangle){32*1.3, 32*4 , 32*15, 32*1}})); // second floor
+    nob_da_append(r, ((Block){(Rectangle){32*1  , 32*0 , 32*15, 32*2}})); // roof
 
-    r->start.x = 32*2;
-    r->start.y = 32*6;
+    r->start.x = 32*14;
+    r->start.y = 32* 9;
+    r->finish.x = 32*15;
+    r->finish.y = 32* 3;
 }
 
 void init_mission_one_room_two(Room *r)       {
@@ -161,17 +163,60 @@ void draw_mission_three_room_three(const Room *r, const Player *p, const Ball *b
     (void)count;
 }
 
-Room mission_one_room_one   = {.init = &init_mission_one_room_one, .update = &update_mission_one_room_one, .draw = &draw_mission_one_room_one};
-Room mission_one_room_two   = {.init = &init_mission_one_room_two, .update = &update_mission_one_room_two, .draw = &draw_mission_one_room_two};
-Room mission_one_room_three = {.init = &init_mission_one_room_three, .update = &update_mission_one_room_three, .draw = &draw_mission_one_room_three};
+Room mission_one_room_one   = {
+    .init   = &init_mission_one_room_one, 
+    .draw   = &draw_mission_one_room_one,
+    .update = &update_mission_one_room_one, 
+};
 
-Room mission_two_room_one   = {.init = &init_mission_two_room_one, .update = &update_mission_two_room_one, .draw = &draw_mission_two_room_one};
-Room mission_two_room_two   = {.init = &init_mission_two_room_two, .update = &update_mission_two_room_two, .draw = &draw_mission_two_room_two};
-Room mission_two_room_three = {.init = &init_mission_two_room_three, .update = &update_mission_two_room_three, .draw = &draw_mission_two_room_three};
+Room mission_one_room_two   = {
+    .init   = &init_mission_one_room_two, 
+    .draw   = &draw_mission_one_room_two,
+    .update = &update_mission_one_room_two, 
+};
 
-Room mission_three_room_one = {.init = &init_mission_three_room_one, .update = &update_mission_three_room_one, .draw = &draw_mission_three_room_one};
-Room mission_three_room_two = {.init = &init_mission_three_room_two, .update = &update_mission_three_room_two, .draw = &draw_mission_three_room_two};
-Room mission_three_room_three = {.init = &init_mission_three_room_three, .update = &update_mission_three_room_three, .draw = &draw_mission_three_room_three};
+Room mission_one_room_three = {
+    .init   = &init_mission_one_room_three, 
+    .draw   = &draw_mission_one_room_three,
+    .update = &update_mission_one_room_three, 
+};
+
+Room mission_two_room_one   = {
+    .init   = &init_mission_two_room_one, 
+    .draw   = &draw_mission_two_room_one,
+    .update = &update_mission_two_room_one, 
+};
+
+Room mission_two_room_two   = {
+    .init   = &init_mission_two_room_two,
+    .draw   = &draw_mission_two_room_two,
+    .update = &update_mission_two_room_two,
+};
+
+Room mission_two_room_three = {
+    .init   = &init_mission_two_room_three,
+    .draw   = &draw_mission_two_room_three,
+    .update = &update_mission_two_room_three,
+};
+
+Room mission_three_room_one = {
+    .init   = &init_mission_three_room_one,
+    .draw   = &draw_mission_three_room_one,
+    .update = &update_mission_three_room_one, 
+};
+
+Room mission_three_room_two = {
+    .init   = &init_mission_three_room_two, 
+    .draw   = &draw_mission_three_room_two,
+    .update = &update_mission_three_room_two,
+};
+
+Room mission_three_room_three = {
+    .init   = &init_mission_three_room_three, 
+    .draw   = &draw_mission_three_room_three,
+    .update = &update_mission_three_room_three, 
+};
+
 
 Room *get_room(Room_Tag tag) {
     switch (tag) {

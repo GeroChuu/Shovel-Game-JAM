@@ -263,10 +263,17 @@ Ball ball     =  {0};
 Room *room    = NULL;
 Player player =  {0};
 
+bool finished = false;
+
 void do_one_frame(void) {
     float dt = GetFrameTime();
     player_update(room, &player, dt);
     ball_update(room, &player, &ball, dt);
+
+    if (CheckCollisionCircleRec(room->finish, 5, player.bound)) {
+        do_simulation = false;
+        finished = true;
+    }
 
     BeginDrawing();
     ClearBackground(GetColor(0x181828FF));
@@ -291,6 +298,11 @@ void do_one_frame(void) {
             DrawRectangleRec(throw_path[i].bound, path_color);
         }
     }
+
+    DrawCircle(room->start.x, room->start.y, 5, GREEN);
+    DrawCircle(room->finish.x, room->finish.y, 5, RED);
+
+    if (finished) DrawText("YEAAAAAAAAA....!!!", 20, 20, 40, GREEN);
 
     EndMode2D();
 
