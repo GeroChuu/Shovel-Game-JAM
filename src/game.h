@@ -12,8 +12,15 @@ typedef void(Room_Init_Func)(Room*);
 typedef void(Room_Draw_Func)(const Room*, const Player*, const Ball*, const Ball*, size_t);
 typedef void(Room_Update_Func)(Room*, float);
 
+typedef enum {
+    MAIN_MENU,
+    GAME_PLAY,
+    ROOM_COMPLETE,
+} Game_State_Kind;
+
 typedef struct {
     Rectangle bound;
+    bool  breakable;
 } Block;
 
 #define FLOAT2VEC2D(f) (Vector2){(f), (f)}
@@ -53,7 +60,7 @@ struct Room {
 #define PLAYER_MAX_SPEED   600.0f
 #define PLAYER_JUMP       -420.0f
 #define PLAYER_ACCELERATE 1300.0f
-#define PLAYER_FRICTION   1900.0f
+#define PLAYER_FRICTION   1400.0f
 
 struct Player {
     Rectangle bound;

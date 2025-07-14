@@ -3,23 +3,39 @@
 #include <nob.h>
 
 void init_mission_one_room_one(Room *r)       {
-    nob_da_append(r, ((Block){(Rectangle){32*0  , 32*10, 32*16, 32*2}})); // base
-    nob_da_append(r, ((Block){(Rectangle){32*0  , 32*0 , 32*1 , 32*12}}));// left wall
-    nob_da_append(r, ((Block){(Rectangle){32*1.3, 32*4 , 32*15, 32*1}})); // second floor
-    nob_da_append(r, ((Block){(Rectangle){32*1  , 32*0 , 32*15, 32*2}})); // roof
-
-    r->start.x = 32*14;
+    nob_da_append(r, ((Block){(Rectangle){32*0  , 32*10, 32*4, 32*2}, false})); // base
+    nob_da_append(r, ((Block){(Rectangle){32*12  , 32*10, 32*4, 32*2}, false})); // base
+    
+    r->start.x = 32*.1;
     r->start.y = 32* 9;
-    r->finish.x = 32*15;
-    r->finish.y = 32* 3;
+    r->finish.x = 32*15.7;
+    r->finish.y = 32* 9;
 }
 
 void init_mission_one_room_two(Room *r)       {
-    (void)r;
+    nob_da_append(r, ((Block){(Rectangle){32*0  , 32*10, 32*16, 32*2}, false})); // base
+    nob_da_append(r, ((Block){(Rectangle){32*15  , 32*0 , 32*1 , 32*12}, false}));// left wall
+    nob_da_append(r, ((Block){(Rectangle){32*0, 32*4 , 32*14.5, 32*1}, false})); // second floor
+    nob_da_append(r, ((Block){(Rectangle){32*0  , 32*0 , 32*15, 32*2}, false})); // roof
+
+    r->start.x = 32*.1;
+    r->start.y = 32* 9;
+    r->finish.x = 32*.4;
+    r->finish.y = 32* 3;
 }
 
 void init_mission_one_room_three(Room *r)     {
-    (void)r;
+    Block rock = {0};
+    rock.bound = (Rectangle){32*4, 32*0, 32*2, 32*4};
+    rock.breakable = true;
+
+    nob_da_append(r, rock);
+    nob_da_append(r, ((Block){(Rectangle){32*0, 32*9 , 32*16, 32*1}, false})); // second floor
+
+    r->start.x = 32*15;
+    r->start.y = 32* 8;
+    r->finish.x = 32*0;
+    r->finish.y = 32*8;
 }
 
 void init_mission_two_room_one(Room *r)       {
@@ -30,19 +46,19 @@ void init_mission_two_room_two(Room *r)       {
     (void)r;
 }
 
-void init_mission_two_room_three(Room *r)    {
+void init_mission_two_room_three(Room *r)     {
     (void)r;
 }
 
-void init_mission_three_room_one(Room *r)    {
+void init_mission_three_room_one(Room *r)     {
     (void)r;
 }
 
-void init_mission_three_room_two(Room *r)    {
+void init_mission_three_room_two(Room *r)     {
     (void)r;
 }
 
-void init_mission_three_room_three(Room *r) {
+void init_mission_three_room_three(Room *r)   {
     (void)r;
 }
 
@@ -57,8 +73,9 @@ void update_mission_one_room_two(Room *r, float dt)     {
 }
 
 void update_mission_one_room_three(Room *r, float dt)   {
-    (void)r;
-    (void)dt;
+    Block *rock  = &r->items[0];
+    Block *floor = &r->items[1];
+    if (rock->bound.y + rock->bound.height < floor->bound.y) rock->bound.y += 1000.0f*dt;
 }
 
 void update_mission_two_room_one(Room *r, float dt)     {
