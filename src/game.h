@@ -20,7 +20,7 @@ typedef enum {
 
 typedef struct {
     Rectangle bound;
-    bool  breakable;
+    bool  breakable, breaked;
 } Block;
 
 #define FLOAT2VEC2D(f) (Vector2){(f), (f)}
@@ -70,7 +70,7 @@ struct Player {
     bool grounded,body_hardening;
 };
 
-#define BALL_MAX_SPEED   800.0f
+#define BALL_MAX_SPEED   820.0f
 #define BALL_ACCELERATE 1000.0f
 #define BALL_FRICTION   1000.0f
 #define BALL_SPEED_SCALE   6.0f
@@ -87,6 +87,7 @@ struct Ball {
     Ball_State state;
 };
 
+void set_player(Player *p);
 Room *get_room(Room_Tag tag);
 
 #endif // GAME_H_

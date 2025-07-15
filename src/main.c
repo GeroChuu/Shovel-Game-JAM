@@ -14,11 +14,11 @@ Ball ball       =  {0};
 Room *room      = NULL;
 Player player   =  {0};
 Camera2D camera =  {0};
+
 static Ball throw_path[PATH_CAPACITY];
 
 Game_State_Kind current_state = GAME_PLAY;
 Room_Tag current_room_tag     = ONE_ONE;
-    
 
 bool finished      = false;
 bool do_simulation =  true;
@@ -32,6 +32,8 @@ bool rectangle_eq(Rectangle a, Rectangle b) {
 
 bool check_player_touch_ground(const Room *r, Player *p, float dt) {
     for (size_t i = 0; i < r->count; ++i) {
+        if (r->items[i].breaked) continue;
+
         Rectangle it = r->items[i].bound;
 
         Rectangle player_rect = p->bound;
@@ -54,6 +56,8 @@ bool check_player_touch_ground(const Room *r, Player *p, float dt) {
 
 bool player_hit_wall(Room *r, Player *p, float dt) {
     for (size_t i = 0; i < r->count; ++i) {
+        if (r->items[i].breaked) continue;
+
         Rectangle it = r->items[i].bound;
 
         Rectangle player_rect = p->bound;
@@ -62,8 +66,8 @@ bool player_hit_wall(Room *r, Player *p, float dt) {
         if (!rectangle_eq(it, p->platform)) {
             if (p->velocity.x > 0) {
                 if (CheckCollisionRecs(player_rect, it) && p->bound.x < it.x) {
-                    if (r->items[i].breakable && p->body_hardening && p->velocity.x >= PLAYER_MAX_SPEED*0.8) {
-                        nob_da_remove_unordered(r, i);
+                    if (r->items[i].breakable && !p->grounded && p->body_hardening && p->velocity.x >= PLAYER_MAX_SPEED) {
+                        r->items[i].breaked = true;
                     }
 
                     p->velocity.x = 0.0f;
@@ -76,8 +80,8 @@ bool player_hit_wall(Room *r, Player *p, float dt) {
                 if (CheckCollisionRecs(player_rect, it) &&
                     p->bound.x+p->bound.width > it.x + it.width) 
                 {
-                    if (r->items[i].breakable && p->body_hardening && p->velocity.x <= -PLAYER_MAX_SPEED*0.8) {
-                        nob_da_remove_unordered(r, i);
+                    if (r->items[i].breakable && !p->grounded && p->body_hardening && p->velocity.x <= -PLAYER_MAX_SPEED) {
+                        r->items[i].breaked = true;
                     }
 
                     p->velocity.x = 0.0f;
@@ -95,6 +99,8 @@ bool player_hit_wall(Room *r, Player *p, float dt) {
 
 void player_hit_ceil(const Room *r, Player *p, float dt) {
     for (size_t i = 0; i < r->count; ++i) {
+        if (r->items[i].breaked) continue;
+
         Rectangle it = r->items[i].bound;
         Rectangle player_rect = p->bound;
 
@@ -127,6 +133,7 @@ void player_update(const Room *r, Player *p, float dt) {
     float frict = PLAYER_FRICTION;
     Vector2 max_speed_a = FLOAT2VEC2D( PLAYER_MAX_SPEED);
     Vector2 max_speed_b = FLOAT2VEC2D(-PLAYER_MAX_SPEED);
+
     if (p->grounded) {
         if (IsKeyDown(KEY_A)) move -= 1.0f;
         if (IsKeyDown(KEY_D)) move += 1.0f;
@@ -134,10 +141,6 @@ void player_update(const Room *r, Player *p, float dt) {
         if (p->bound.x+p->bound.width < p->platform.x ||
             p->bound.x > p->platform.x + p->platform.width) p->grounded = false;
 
-    } else {
-        frict /= 8.0f;
-        max_speed_a.x *= 2.0f;
-        max_speed_b.x *= 2.0f;
     }
 
     move = (player_hit_wall((Room*)r, p, dt)) ? 0.0f : move;
@@ -145,7 +148,7 @@ void player_update(const Room *r, Player *p, float dt) {
 
     if (move != 0.0f) {
         p->velocity.x += move * PLAYER_ACCELERATE * dt;
-    } else {
+    } else if (!p->body_hardening && p->grounded){
         if      (p->velocity.x > 0) p->velocity.x = fmaxf(0, p->velocity.x - frict * dt);
         else if (p->velocity.x < 0) p->velocity.x = fminf(0, p->velocity.x + frict * dt);
     }
@@ -167,13 +170,14 @@ void player_swap(const Room *r, Player *p, Ball *b) {
     Vector2 ball_velocity = b->velocity;
 
     b->velocity = p->velocity;
-    b->bound.x  = p->bound.x;
+    b->bound.x  = p->bound.x + 5;
     b->bound.y  = p->bound.y + (p->bound.height - b->bound.height);
 
     p->velocity = ball_velocity;
-    p->bound.x  = ball_pos.x;
+    p->bound.x  = ball_pos.x - 5;
     p->bound.y  = ball_pos.y - (p->bound.height - b->bound.height);
 
+    p->grounded = false;
     NOB_UNUSED(r);
 }
 
@@ -216,9 +220,6 @@ void ball_check_collision_and_bounce(const Room *r, Ball *b, float dt) {
 void ball_simulate(const Room *r, Ball *b, float dt) {
     b->velocity.y += GRAVITY * dt;
 
-    if      (b->velocity.x > 0) b->velocity.x = fmaxf(0, b->velocity.x - (BALL_FRICTION/8) * dt);
-    else if (b->velocity.x < 0) b->velocity.x = fminf(0, b->velocity.x + (BALL_FRICTION/8) * dt);
-    
     if      (b->velocity.y > 0) b->velocity.y = fmaxf(0, b->velocity.y - (BALL_FRICTION/8) * dt);
     else if (b->velocity.y < 0) b->velocity.y = fminf(0, b->velocity.y + (BALL_FRICTION/8) * dt);
 
@@ -290,6 +291,8 @@ void do_one_frame(void) {
         ball_update(room, &player, &ball, dt);
 
         if (CheckCollisionCircleRec(room->finish, 5, player.bound)) {
+            player.velocity = (Vector2){0,0};
+
             current_state = ROOM_COMPLETE;
         }
 
@@ -311,6 +314,7 @@ void do_one_frame(void) {
 
         BeginMode2D(camera);
         for (size_t i=0; i<room->count; ++i) {
+            if (room->items[i].breaked) continue;
             DrawRectangleRec(room->items[i].bound, RED);
         }
 
@@ -346,6 +350,8 @@ int main() {
 
     ball.bound.width  = 5;
     ball.bound.height = 5;
+
+    set_player(&player);
 
     for (int i=ONE_ONE; i<ROOM_COUNT; ++i) {
         Room *r = get_room(i);
